@@ -3,9 +3,11 @@ import Customer from "../models/customer.model";
 
 export const createCustomer = async (req: Request, res: Response) => {
     try {
-        const { name, email, phone, address, notes } = req.body;
 
-        if (!name || !email || !phone || !address) {
+        console.log("Creating the Customer");
+        const { name, email, phone } = req.body;
+
+        if (!name || !email || !phone ) {
             res.status(400).json({ success: false, message: "All fields except notes are required" });
         }
 
@@ -15,7 +17,7 @@ export const createCustomer = async (req: Request, res: Response) => {
             res.status(400).json({ success: false, message: "Customer with this email or phone already exists" });
         }
 
-        const customer = new Customer({ name, email, phone, address, notes });
+        const customer = new Customer({ name, email, phone });
         await customer.save();
 
         res.status(201).json({

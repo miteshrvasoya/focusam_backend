@@ -49,9 +49,11 @@ export const getInvoices = async (req: Request, res: Response) => {
                 currentPage,
             },
         });
+        return;
     } catch (error) {
         console.error("Error fetching invoices:", error);
         res.status(500).json({ success: false, message: "Server Error" });
+        return;
     }
 };
 

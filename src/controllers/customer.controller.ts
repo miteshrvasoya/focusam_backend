@@ -9,12 +9,15 @@ export const createCustomer = async (req: Request, res: Response) => {
 
         if (!name || !email || !phone ) {
             res.status(400).json({ success: false, message: "All fields except notes are required" });
+            return;
         }
 
         // Check if customer already exists
         const existingCustomer = await Customer.findOne({ $or: [{ email }, { phone }] });
         if (existingCustomer) {
             res.status(400).json({ success: false, message: "Customer with this email or phone already exists" });
+
+            return;
         }
 
         const customer = new Customer({ name, email, phone });
@@ -25,9 +28,11 @@ export const createCustomer = async (req: Request, res: Response) => {
             message: "Customer created successfully",
             data: customer,
         });
+        return;
     } catch (error) {
         console.error("Error creating customer:", error);
         res.status(500).json({ success: false, message: "Server Error" });
+        return;
     }
 };
 
@@ -52,9 +57,11 @@ export const getCustomers = async (req: Request, res: Response) => {
                 updatedAt: customer.updatedAt,
             })),
         });
+        return;
     } catch (error) {
         console.error("Error fetching customers:", error);
         res.status(500).json({ success: false, message: "Server Error" });
+        return;
     }
 };
 
@@ -88,16 +95,19 @@ export const getCustomersFromMobile = async (req: Request, res: Response) => {
                     updatedAt: customer.updatedAt,
                 },
             });
+            return;
         } else {
             res.status(200).json({
                 success: true,
                 data: {},
             });
+            return;
         }
 
         
     } catch (error) {
         console.error("Error fetching customers:", error);
         res.status(500).json({ success: false, message: "Server Error" });
+        return;
     }
 };

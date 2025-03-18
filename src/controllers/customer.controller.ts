@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import Customer from "../models/customer.model";
+import Invoice from "../models/invoice.model";
 
 export const createCustomer = async (req: Request, res: Response) => {
     try {
@@ -39,29 +40,38 @@ export const createCustomer = async (req: Request, res: Response) => {
 
 export const getCustomers = async (req: Request, res: Response) => {
     try {
+        // Fetch customers
         const customers = await Customer.find().sort({ createdAt: -1 });
+
+        // Fetch all invoices related to the customers
+        const customerIds = customers.map(customer => customer._id);
+        const invoices = await Invoice.find({ customerId: { $in: customerIds } });
+
+        // Calculate total spent for each customer
+        const customerTotalSpentMap = invoices.reduce((acc, invoice) => {
+            acc[invoice.customerId] = (acc[invoice.customerId] || 0) + invoice.amount;
+            return acc;
+        }, {} as Record<string, number>);
 
         res.status(200).json({
             success: true,
-            data: customers.map((customer) => ({
+            data: customers.map((customer: any) => ({
                 id: customer._id,
                 name: customer.name,
                 email: customer.email,
                 phone: customer.phone,
                 address: customer.address,
                 lastVisit: new Date().toISOString(), // Placeholder, replace with actual visit logic
-                totalSpent: 0, // Placeholder, replace with actual total spent logic
-                invoices: [], // Placeholder, replace with actual invoices linked to the customer
+                totalSpent: customerTotalSpentMap[customer._id.toString()] || 0, // Get total spent
+                invoices: invoices.filter((inv: any) => inv.customerId.toString() === customer._id.toString()), // Get related invoices
                 notes: customer.notes,
                 createdAt: customer.createdAt,
                 updatedAt: customer.updatedAt,
             })),
         });
-        return;
     } catch (error) {
         console.error("Error fetching customers:", error);
         res.status(500).json({ success: false, message: "Server Error" });
-        return;
     }
 };
 

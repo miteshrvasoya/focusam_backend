@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
 import Invoice from "../models/invoice.model";
+import Customer from "../models/customer.model";
+import vehicleModel from "../models/vehicle.model";
 
 // Fetch Invoice List with Pagination, Search, and Filtering
 export const getInvoices = async (req: Request, res: Response) => {
@@ -57,7 +59,6 @@ export const getInvoices = async (req: Request, res: Response) => {
     }
 };
 
-
 const generateInvoiceNumber = async (): Promise<string> => {
     const latestInvoice: any = await Invoice.findOne().sort({ createdAt: -1 });
     let newNumber = 1;
@@ -95,3 +96,65 @@ export const createInvoice = async (req: Request, res: Response) => {
     }
 };
 
+export const getInvoiceById = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+
+        console.log("Fetching invoice of ID:", JSON.stringify(id));
+
+        if(!id) res.status(404).json({ success: false, message: "Invoice not found" });
+
+        // Fetch the invoice by ID and populate customer & vehicle details
+        const invoice = await Invoice.findById(id);
+
+        console.log("Invoices:", invoice);
+
+        if (!invoice) {
+            res.status(404).json({ success: false, message: "Invoice not found" });
+            return ;
+        }
+
+        // Fetch associated customer details
+        const customer = await Customer.findById(invoice.customerId);
+
+        console.log("customer:", customer)
+
+        // Fetch associated vehicle details
+        const vehicle = await vehicleModel.findById(invoice.vehicleId);
+
+        console.log("vehicle:", vehicle)
+
+        res.status(200).json({
+            success: true,
+            data: {
+                invoice,
+                customer: customer
+                    ? {
+                          id: customer._id,
+                          name: customer.name,
+                          email: customer.email,
+                          phone: customer.phone,
+                          address: customer.address,
+                          notes: customer.notes,
+                      }
+                    : null,
+                vehicle: vehicle
+                    ? {
+                          id: vehicle._id,
+                          make: vehicle.make,
+                          model: vehicle.model,
+                          year: vehicle.year,
+                          registrationNumber: vehicle.registration,
+                          color: vehicle.color,
+                          odometer: vehicle.odometer,
+                          status: vehicle.status,
+                      }
+                    : null,
+            },
+        });
+        return;
+    } catch (error) {
+        console.error("Error fetching invoice:", error);
+        res.status(500).json({ success: false, message: "Server Error" });
+    }
+};

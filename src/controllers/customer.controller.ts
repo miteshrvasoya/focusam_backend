@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import Customer from "../models/customer.model";
 import Invoice from "../models/invoice.model";
+import vehicleModel from "../models/vehicle.model";
 
 export const createCustomer = async (req: Request, res: Response) => {
     try {
@@ -119,5 +120,74 @@ export const getCustomersFromMobile = async (req: Request, res: Response) => {
         console.error("Error fetching customers:", error);
         res.status(500).json({ success: false, message: "Server Error" });
         return;
+    }
+};
+
+export const getCustomerById = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+
+        console.log("Fetching customer details for ID:", id);
+
+        if (!id) {
+            res.status(400).json({ success: false, message: "Customer ID is required" });
+            return;
+        }
+
+        // Fetch customer by ID
+        const customer = await Customer.findById(id);
+
+        console.log("Customers: ", customer);
+
+        if (!customer) {
+            res.status(404).json({ success: false, message: "Customer not found" });
+            return;
+        }
+
+        // Fetch invoices linked to this customer
+        const invoices = await Invoice.find({ customerId: id });
+
+        console.log("Invoices:", invoices);
+
+        // Fetch vehicles linked to this customer
+        const vehicles = await vehicleModel.find({ customerId: id });
+
+        console.log("Vehicles:", vehicles);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                customer: {
+                    id: customer._id,
+                    customer_id: customer.id,
+                    name: customer.name,
+                    email: customer.email,
+                    phone: customer.phone,
+                    address: customer.address,
+                    notes: customer.notes,
+                },
+                invoices: invoices.map((invoice) => ({
+                    invoice_id: invoice._id,
+                    amount: invoice.amount,
+                    status: invoice.status,
+                    date: invoice.date,
+                    dueDate: invoice.dueDate,
+                })),
+                vehicles: vehicles.map((vehicle: any) => ({
+                    vehicle_id: vehicle._id,
+                    make: vehicle.make,
+                    model: vehicle.model,
+                    year: vehicle.year,
+                    registration: vehicle.registration,
+                    color: vehicle.color,
+                    odometer: vehicle.odometer,
+                    status: vehicle.status,
+                    lastServiceDate: vehicle.lastServiceDate || vehicle.updatedAt, // Use updated_date if lastServiceDate is not available
+                })),
+            },
+        });
+    } catch (error) {
+        console.error("Error fetching customer:", error);
+        res.status(500).json({ success: false, message: "Server Error" });
     }
 };
